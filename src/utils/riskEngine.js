@@ -1,6 +1,6 @@
 /**
  * Explainable Risk Assessment Engine (Layer 5)
- * Synthesizes signals across OCR, Metadata, ELA Forensics, and Transaction Consistency.
+ * Synthesizes signals across OCR, Metadata, ELA Forensics, NPCI UTR Decoding, and Transaction Consistency.
  */
 
 export const calculateExplainableRisk = ({
@@ -25,7 +25,64 @@ export const calculateExplainableRisk = ({
     });
   }
 
-  // 2. UTR & TRANSACTION CONSISTENCY CHECKS
+  // 2. SYNTHETIC / DUMMY UTR DETECTION
+  if (upiResult.isDummyUtr) {
+    const points = 50;
+    rawScore += points;
+    evidenceFactors.push({
+      layer: 'Layer 4: Transaction Consistency',
+      severity: 'high',
+      title: `Synthetic / Dummy UTR Sequence (${upiResult.dummyDetails?.type})`,
+      description: `UTR "${upiResult.utrId}" is a synthetic pattern (${upiResult.dummyDetails?.pattern}). Scammers frequently enter repeated or sequential numbers.`,
+      points
+    });
+  }
+
+  // 3. NPCI UTR JULIAN TEMPORAL VALIDATION
+  if (upiResult.utrDecoded?.isImpossibleJulianDay) {
+    const points = 45;
+    rawScore += points;
+    evidenceFactors.push({
+      layer: 'Layer 4: Transaction Consistency',
+      severity: 'high',
+      title: 'Mathematically Impossible NPCI UTR',
+      description: `UTR "${upiResult.utrId}" decodes to Julian Day ${upiResult.utrDecoded.julianDay}, which exceeds the 365/366 calendar day maximum. No banking network can issue this reference.`,
+      points
+    });
+  } else if (upiResult.utrDecoded?.isTemporalMismatch) {
+    const points = 40;
+    rawScore += points;
+    evidenceFactors.push({
+      layer: 'Layer 4: Transaction Consistency',
+      severity: 'high',
+      title: 'Date-to-UTR Temporal Mismatch',
+      description: `The receipt date claims "${upiResult.date}", but the UTR's encoded Julian date decodes to "${upiResult.utrDecoded.formattedDecodedDate}" (${upiResult.utrDecoded.temporalDifferenceDays} days mismatch). This indicates forged or spliced receipt text.`,
+      points
+    });
+  } else if (upiResult.utrDecoded?.isTemporalMatch) {
+    evidenceFactors.push({
+      layer: 'Layer 4: Transaction Consistency',
+      severity: 'low',
+      title: 'Verified NPCI Julian Temporal Encoding',
+      description: `UTR "${upiResult.utrId}" mathematically confirms the transaction date: Julian Day ${upiResult.utrDecoded.julianDay} correlates precisely with ${upiResult.utrDecoded.formattedDecodedDate}.`,
+      points: 0
+    });
+  }
+
+  // 4. PHONE CLOCK VS TRANSACTION TIME COMPARISON
+  if (upiResult.clockComparison?.isFuturePayment) {
+    const points = 35;
+    rawScore += points;
+    evidenceFactors.push({
+      layer: 'Layer 4: Transaction Consistency',
+      severity: 'high',
+      title: 'Clock Inconsistency (Future Transaction Timestamp)',
+      description: `The payment receipt timestamp (${upiResult.clockComparison.txnTime}) is ${upiResult.clockComparison.diffMinutes} minutes ahead of the phone's status bar clock (${upiResult.clockComparison.statusTime}).`,
+      points
+    });
+  }
+
+  // 5. UTR LENGTH & STRUCTURE CHECKS
   if (upiResult.isUtrLengthInvalid) {
     const points = 45;
     rawScore += points;
@@ -33,10 +90,10 @@ export const calculateExplainableRisk = ({
       layer: 'Layer 4: Transaction Consistency',
       severity: 'high',
       title: `Anomalous UTR Length (${upiResult.utrId?.length || 'Invalid'} Digits)`,
-      description: `Captured UTR "${upiResult.utrId}" is ${upiResult.utrId?.length} digits long. Standard NPCI UPI UTRs are strictly 12 digits. Length mismatch is a known signature of fake payment generator APKs.`,
+      description: `Captured UTR "${upiResult.utrId}" is ${upiResult.utrId?.length} digits long. Standard NPCI UPI UTRs are strictly 12 digits. Length mismatch is a primary signature of fake payment generator APKs.`,
       points
     });
-  } else if (upiResult.fieldIntegrity?.utrValid) {
+  } else if (upiResult.fieldIntegrity?.utrValid && !upiResult.isDummyUtr && !upiResult.utrDecoded?.isTemporalMismatch) {
     evidenceFactors.push({
       layer: 'Layer 4: Transaction Consistency',
       severity: 'low',
@@ -58,7 +115,7 @@ export const calculateExplainableRisk = ({
     });
   }
 
-  // Check missing critical fields
+  // 6. MISSING CRITICAL FIELDS
   if (!upiResult.amount) {
     const points = 30;
     rawScore += points;
@@ -124,7 +181,7 @@ export const calculateExplainableRisk = ({
     });
   }
 
-  // 3. FORENSIC INTEGRITY SIGNALS (ELA Forensics)
+  // 7. FORENSIC INTEGRITY SIGNALS (ELA Forensics)
   if (integrityResult.anomalyRatio > 8.0) {
     const points = 35;
     rawScore += points;
@@ -155,7 +212,7 @@ export const calculateExplainableRisk = ({
     });
   }
 
-  // 4. METADATA SIGNALS
+  // 8. METADATA SIGNALS
   if (metadataResult.isEditingSoftwareDetected) {
     const points = 40;
     rawScore += points;
@@ -175,7 +232,6 @@ export const calculateExplainableRisk = ({
       points: 0
     });
   } else {
-    // Missing metadata alone must NOT add high risk
     evidenceFactors.push({
       layer: 'Layer 2: Metadata Examination',
       severity: 'neutral',
@@ -185,7 +241,7 @@ export const calculateExplainableRisk = ({
     });
   }
 
-  // 5. OCR CONFIDENCE & FIELD READABILITY
+  // 9. OCR CONFIDENCE & FIELD READABILITY
   if (ocrResult.success && ocrResult.confidence > 70) {
     evidenceFactors.push({
       layer: 'Layer 1: OCR Intelligence',

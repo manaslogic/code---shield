@@ -15,6 +15,7 @@ import { Button } from '../components/common/Button';
 import { AnalysisOverview } from '../components/forensic/AnalysisOverview';
 import { ForensicLayer } from '../components/forensic/ForensicLayer';
 import { RiskAssessment } from '../components/forensic/RiskAssessment';
+import { MerchantTool } from '../components/forensic/MerchantTool';
 
 export const ForensicAnalysis = () => {
   const navigate = useNavigate();
@@ -334,6 +335,14 @@ export const ForensicAnalysis = () => {
           analysis={currentAnalysis} 
           isAnalyzing={isAnalyzing} 
         />
+
+        {/* Interactive Merchant Cross-Check Assistant & Decoded UTR Breakdown */}
+        {currentAnalysis && (
+          <MerchantTool 
+            analysis={currentAnalysis} 
+            scanId={recordId} 
+          />
+        )}
       </div>
     </div>
   );
