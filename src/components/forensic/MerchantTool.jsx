@@ -55,6 +55,67 @@ export const MerchantTool = ({ analysis, scanId }) => {
         )}
       </div>
 
+      {/* 0. Beneficiary Shop UPI ID Match Alert */}
+      {upi?.beneficiaryCheck?.tested && (
+        <div style={{
+          padding: '14px 18px',
+          borderRadius: '6px',
+          marginBottom: '20px',
+          border: upi.beneficiaryCheck.isMismatch
+            ? '1px solid var(--color-risk-high-border)'
+            : upi.beneficiaryCheck.isMatch
+              ? '1px solid var(--color-risk-low-border)'
+              : '1px solid var(--color-border)',
+          background: upi.beneficiaryCheck.isMismatch
+            ? 'var(--color-risk-high-bg)'
+            : upi.beneficiaryCheck.isMatch
+              ? 'var(--color-risk-low-bg)'
+              : '#F8FAFC'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              {upi.beneficiaryCheck.isMismatch ? (
+                <AlertTriangle size={20} color="var(--color-risk-high)" />
+              ) : upi.beneficiaryCheck.isMatch ? (
+                <ShieldCheck size={20} color="var(--color-risk-low)" />
+              ) : (
+                <AlertTriangle size={20} color="var(--color-risk-medium)" />
+              )}
+              <div>
+                <strong style={{
+                  fontSize: '14px',
+                  color: upi.beneficiaryCheck.isMismatch
+                    ? 'var(--color-risk-high)'
+                    : upi.beneficiaryCheck.isMatch
+                      ? 'var(--color-risk-low)'
+                      : 'var(--color-primary-text)'
+                }}>
+                  {upi.beneficiaryCheck.isMismatch
+                    ? 'CRITICAL BENEFICIARY MISMATCH DETECTED'
+                    : upi.beneficiaryCheck.isMatch
+                      ? 'SHOP BENEFICIARY MATCH CONFIRMED'
+                      : 'BENEFICIARY UNVERIFIED IN SCREENSHOT'}
+                </strong>
+                <div style={{ fontSize: '13px', marginTop: '2px', color: 'var(--color-primary-text)' }}>
+                  {upi.beneficiaryCheck.isMismatch && (
+                    <span>Customer paid to <code>{upi.beneficiaryCheck.extractedUpiId || upi.upiId}</code>, but your shop UPI ID is <code>{upi.beneficiaryCheck.expectedUpiId}</code>. This payment went to a different account!</span>
+                  )}
+                  {upi.beneficiaryCheck.isMatch && (
+                    <span>Payment beneficiary handle <code>{upi.beneficiaryCheck.extractedUpiId || upi.upiId}</code> matches your registered shop account (<code>{upi.beneficiaryCheck.expectedUpiId}</code>).</span>
+                  )}
+                  {upi.beneficiaryCheck.isMissing && (
+                    <span>Screenshot does not visibly disclose the receiving UPI ID to compare against your expected account (<code>{upi.beneficiaryCheck.expectedUpiId}</code>).</span>
+                  )}
+                </div>
+              </div>
+            </div>
+            <Badge variant={upi.beneficiaryCheck.isMismatch ? 'high' : upi.beneficiaryCheck.isMatch ? 'low' : 'medium'}>
+              {upi.beneficiaryCheck.isMismatch ? '+65 Risk Penalty' : upi.beneficiaryCheck.isMatch ? 'Verified Account' : 'Needs Verification'}
+            </Badge>
+          </div>
+        </div>
+      )}
+
       {/* 1. NPCI UTR Julian Breakdown Visualizer */}
       <div style={{
         background: '#F8FAFC',

@@ -22,13 +22,22 @@ const SPOOF_WATERMARK_PATTERNS = [
   /\bFUN\s+WALLET\b/i
 ];
 
-export const parseAndValidateUPI = (rawText = '') => {
+export const parseAndValidateUPI = (rawText = '', expectedMerchantUpi = null) => {
   const text = rawText || '';
   const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+
+  const cleanExpectedUpi = expectedMerchantUpi ? expectedMerchantUpi.trim().toLowerCase() : null;
 
   const result = {
     amount: null,
     upiId: null,
+    beneficiaryCheck: {
+      expectedUpiId: cleanExpectedUpi,
+      extractedUpiId: null,
+      isMatch: false,
+      isMismatch: false,
+      isMissing: false
+    },
     transactionId: null,
     utrId: null,
     utrDecoded: null,
@@ -52,7 +61,8 @@ export const parseAndValidateUPI = (rawText = '') => {
       utrValid: false,
       dateTimeValid: false,
       statusValid: false,
-      temporalMatch: false
+      temporalMatch: false,
+      beneficiaryMatch: false
     }
   };
 
@@ -94,6 +104,31 @@ export const parseAndValidateUPI = (rawText = '') => {
         }
         break;
       }
+    }
+  }
+
+  // Cross-verify with Expected Merchant UPI ID (if configured or provided)
+  if (cleanExpectedUpi) {
+    if (result.upiId) {
+      const extractedClean = result.upiId.trim().toLowerCase();
+      result.beneficiaryCheck.extractedUpiId = extractedClean;
+
+      const expectedUser = cleanExpectedUpi.split('@')[0];
+      const extractedUser = extractedClean.split('@')[0];
+
+      // Exact match or handle user match
+      if (extractedClean === cleanExpectedUpi || extractedUser === expectedUser) {
+        result.beneficiaryCheck.isMatch = true;
+        result.fieldIntegrity.beneficiaryMatch = true;
+        result.findings.push(`BENEFICIARY MATCH CONFIRMED: Payment beneficiary "${result.upiId}" matches your expected shop UPI ID ("${cleanExpectedUpi}").`);
+      } else {
+        result.beneficiaryCheck.isMismatch = true;
+        result.consistencyRiskScore += 65;
+        result.findings.push(`CRITICAL BENEFICIARY MISMATCH: Screenshot payment is addressed to "${result.upiId}", but your registered shop UPI ID is "${cleanExpectedUpi}". This payment was NOT directed to your account!`);
+      }
+    } else {
+      result.beneficiaryCheck.isMissing = true;
+      result.findings.push(`BENEFICIARY UNVERIFIED: Beneficiary UPI ID is missing or obscured from view. Could not confirm payment target against your expected ID ("${cleanExpectedUpi}").`);
     }
   }
 
@@ -245,6 +280,31 @@ export const parseAndValidateUPI = (rawText = '') => {
         result.fieldIntegrity.amountValid = true;
         break;
       }
+    }
+  }
+
+  // Cross-verify with Expected Merchant UPI ID (if configured or provided)
+  if (cleanExpectedUpi) {
+    if (result.upiId) {
+      const extractedClean = result.upiId.trim().toLowerCase();
+      result.beneficiaryCheck.extractedUpiId = extractedClean;
+
+      const expectedUser = cleanExpectedUpi.split('@')[0];
+      const extractedUser = extractedClean.split('@')[0];
+
+      // Exact match or handle user match
+      if (extractedClean === cleanExpectedUpi || extractedUser === expectedUser) {
+        result.beneficiaryCheck.isMatch = true;
+        result.fieldIntegrity.beneficiaryMatch = true;
+        result.findings.push(`BENEFICIARY MATCH CONFIRMED: Payment beneficiary "${result.upiId}" matches your expected shop UPI ID ("${cleanExpectedUpi}").`);
+      } else {
+        result.beneficiaryCheck.isMismatch = true;
+        result.consistencyRiskScore += 65;
+        result.findings.push(`CRITICAL BENEFICIARY MISMATCH: Screenshot payment is addressed to "${result.upiId}", but your registered shop UPI ID is "${cleanExpectedUpi}". This payment was NOT directed to your account!`);
+      }
+    } else {
+      result.beneficiaryCheck.isMissing = true;
+      result.findings.push(`BENEFICIARY UNVERIFIED: Beneficiary UPI ID is missing or obscured from view. Could not confirm payment target against your expected ID ("${cleanExpectedUpi}").`);
     }
   }
 

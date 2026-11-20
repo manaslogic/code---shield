@@ -22,6 +22,7 @@ export const ForensicAnalysis = () => {
   const [searchParams] = useSearchParams();
   const recordId = searchParams.get('recordId');
   const autoStart = searchParams.get('autoStart') === 'true';
+  const expectedUpi = searchParams.get('expectedUpi') || '';
 
   const { 
     currentScan, 
@@ -32,7 +33,8 @@ export const ForensicAnalysis = () => {
     scans,
     isAnalyzing, 
     analysisProgress, 
-    executeForensicPipeline 
+    executeForensicPipeline,
+    merchantUpiId
   } = useScan();
 
   const hasAutoStartedRef = useRef(false);
@@ -58,9 +60,9 @@ export const ForensicAnalysis = () => {
   useEffect(() => {
     if (autoStart && currentScan && !currentAnalysis && !isAnalyzing && !hasAutoStartedRef.current) {
       hasAutoStartedRef.current = true;
-      executeForensicPipeline(currentScan, recordId);
+      executeForensicPipeline(currentScan, recordId, expectedUpi);
     }
-  }, [autoStart, currentScan, currentAnalysis, isAnalyzing, recordId, executeForensicPipeline]);
+  }, [autoStart, currentScan, currentAnalysis, isAnalyzing, recordId, expectedUpi, executeForensicPipeline]);
 
   if (!currentScan) {
     return (
@@ -77,7 +79,7 @@ export const ForensicAnalysis = () => {
   }
 
   const handleStartAnalysis = () => {
-    executeForensicPipeline(currentScan, recordId);
+    executeForensicPipeline(currentScan, recordId, expectedUpi);
   };
 
   // Layer 1: OCR Intelligence data
@@ -193,6 +195,18 @@ export const ForensicAnalysis = () => {
             : (currentAnalysis ? 'Missing or undetected UTR' : 'Awaiting transaction validation')),
       highlight: upiData?.fieldIntegrity?.utrValid,
       isAnomalous: currentAnalysis && (!upiData?.fieldIntegrity?.utrValid || upiData?.isUtrLengthInvalid)
+    },
+    { 
+      label: 'Merchant Beneficiary Match', 
+      value: upiData?.beneficiaryCheck?.tested 
+        ? (upiData.beneficiaryCheck.isMatch 
+            ? `Verified Match: ${upiData.beneficiaryCheck.expectedUpiId}` 
+            : (upiData.beneficiaryCheck.isMismatch 
+                ? `CRITICAL MISMATCH: Sent to "${upiData.beneficiaryCheck.extractedUpiId || upiData.upiId}" (Expected: "${upiData.beneficiaryCheck.expectedUpiId}")` 
+                : `Beneficiary unverified in image (Expected: "${upiData.beneficiaryCheck.expectedUpiId}")`))
+        : (currentAnalysis ? 'Not configured (Optional cross-check)' : 'Awaiting transaction validation'),
+      highlight: upiData?.beneficiaryCheck?.tested && upiData?.beneficiaryCheck?.isMatch,
+      isAnomalous: upiData?.beneficiaryCheck?.tested && (upiData?.beneficiaryCheck?.isMismatch || upiData?.beneficiaryCheck?.isMissing)
     },
     { 
       label: 'Amount Verification', 

@@ -84,7 +84,7 @@ const createEnhancedCanvas = (imageSource) => {
  * Executes OCR on the provided image source with progress tracking,
  * dark-mode contrast fallback, and safety timeout.
  */
-export const runOCRIntelligence = async (imageSource, onProgress) => {
+export const runOCRIntelligence = async (imageSource, onProgress, expectedUpiId = null) => {
   try {
     if (onProgress) onProgress({ status: 'Initializing OCR Engine...', progress: 10 });
 
@@ -107,7 +107,7 @@ export const runOCRIntelligence = async (imageSource, onProgress) => {
       let confidence = Math.round(result?.data?.confidence || 0);
 
       // Check if primary pass missed amount or has low confidence
-      let parsedUPI = parseAndValidateUPI(text);
+      let parsedUPI = parseAndValidateUPI(text, expectedUpiId);
 
       // 2. If amount is missing, try enhanced high-contrast pass
       if (!parsedUPI.amount) {
@@ -118,7 +118,7 @@ export const runOCRIntelligence = async (imageSource, onProgress) => {
             const enhancedResult = await recognize(enhancedSource, 'eng');
             const enhancedText = enhancedResult?.data?.text || '';
             const combinedText = text + '\n' + enhancedText;
-            const reParsed = parseAndValidateUPI(combinedText);
+            const reParsed = parseAndValidateUPI(combinedText, expectedUpiId);
             if (reParsed.amount) {
               text = combinedText;
               parsedUPI = reParsed;
@@ -151,7 +151,7 @@ export const runOCRIntelligence = async (imageSource, onProgress) => {
       error: err?.message || 'OCR processing notice',
       rawText: '',
       confidence: 0,
-      parsedUPI: parseAndValidateUPI(''),
+      parsedUPI: parseAndValidateUPI('', expectedUpiId),
       engine: 'Heuristic Fallback'
     };
   }

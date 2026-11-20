@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, ShieldAlert, Sparkles, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Search, ShieldAlert, Sparkles, CheckCircle, AlertTriangle, Building } from 'lucide-react';
 import { useScan } from '../context/ScanContext';
 import { UploadZone } from '../components/upload/UploadZone';
 import { ImagePreview } from '../components/upload/ImagePreview';
@@ -9,9 +9,16 @@ import { createSampleScreenshot } from '../utils/sampleGenerator';
 
 export const NewScan = () => {
   const navigate = useNavigate();
-  const { currentScan, setCurrentScan, clearCurrentScan, addScanRecord } = useScan();
+  const { currentScan, setCurrentScan, clearCurrentScan, addScanRecord, merchantUpiId, setMerchantUpiId } = useScan();
   const [error, setError] = useState(null);
   const [isGeneratingSample, setIsGeneratingSample] = useState(false);
+  const [expectedUpi, setExpectedUpi] = useState(merchantUpiId || '');
+
+  useEffect(() => {
+    if (merchantUpiId && !expectedUpi) {
+      setExpectedUpi(merchantUpiId);
+    }
+  }, [merchantUpiId]);
 
   const handleFileSelected = (fileData) => {
     setCurrentScan(fileData);
@@ -64,6 +71,9 @@ export const NewScan = () => {
     try {
       const sample = await createSampleScreenshot(sampleType);
       setCurrentScan(sample);
+      if (sampleType === 'authentic' && !expectedUpi) {
+        setExpectedUpi('sharmaprovisions@okaxis');
+      }
       setError(null);
     } catch (err) {
       setError('Failed to generate sample image.');
@@ -83,17 +93,23 @@ export const NewScan = () => {
   const handleAnalyze = () => {
     if (!currentScan) return;
 
+    const cleanExpected = expectedUpi.trim().toLowerCase();
+    if (cleanExpected) {
+      setMerchantUpiId(cleanExpected);
+    }
+
     // Create a new scan history record
     const newRecord = addScanRecord({
       fileName: currentScan.name,
       fileSize: currentScan.size,
       amount: null,
       riskLevel: 'pending',
-      status: 'Analyzing...'
+      status: 'Analyzing...',
+      expectedMerchantUpi: cleanExpected || null
     });
 
-    // Navigate to Forensic Analysis with retained currentScan and new record id
-    navigate(`/forensic-analysis?recordId=${newRecord.id}&autoStart=true`);
+    const expectedParam = cleanExpected ? `&expectedUpi=${encodeURIComponent(cleanExpected)}` : '';
+    navigate(`/forensic-analysis?recordId=${newRecord.id}&autoStart=true${expectedParam}`);
   };
 
   return (
@@ -157,6 +173,25 @@ export const NewScan = () => {
           onReplace={handleReplace} 
         />
       )}
+
+      {/* Optional Expected Merchant UPI ID Field */}
+      <div className="fintech-card" style={{ padding: '16px 20px' }}>
+        <label style={{ fontSize: '13px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+          <Building size={16} color="var(--color-primary-accent)" />
+          Expected Shop / Merchant UPI ID (Optional Beneficiary Test)
+        </label>
+        <p className="text-secondary" style={{ fontSize: '12px', marginBottom: '10px' }}>
+          Enter your UPI ID (e.g. <code>myshop@okaxis</code> or <code>9876543210@paytm</code>). If filled, UPI Shield will test whether this payment was sent to you or redirected elsewhere!
+        </p>
+        <input
+          type="text"
+          className="form-input"
+          style={{ maxWidth: '420px' }}
+          placeholder="e.g. yourshop@okaxis, merchant@paytm"
+          value={expectedUpi}
+          onChange={(e) => setExpectedUpi(e.target.value)}
+        />
+      </div>
 
       {/* Privacy Notice */}
       <div className="security-notice-banner" style={{ marginTop: 0 }}>

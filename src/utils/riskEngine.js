@@ -25,6 +25,27 @@ export const calculateExplainableRisk = ({
     });
   }
 
+  // 1B. BENEFICIARY UPI ID MISMATCH / MATCH
+  if (upiResult.beneficiaryCheck?.isMismatch) {
+    const points = 65;
+    rawScore += points;
+    evidenceFactors.push({
+      layer: 'Layer 4: Transaction Consistency',
+      severity: 'high',
+      title: 'Beneficiary Mismatch: Payment Sent to Someone Else',
+      description: `Payment was addressed to "${upiResult.upiId}", but your expected merchant UPI ID is "${upiResult.beneficiaryCheck.expectedUpiId}". Money was not transferred to your account!`,
+      points
+    });
+  } else if (upiResult.beneficiaryCheck?.isMatch) {
+    evidenceFactors.push({
+      layer: 'Layer 4: Transaction Consistency',
+      severity: 'low',
+      title: 'Beneficiary Confirmed (Matches Your Shop)',
+      description: `Beneficiary "${upiResult.upiId}" matches your expected shop UPI ID. Target account verified.`,
+      points: 0
+    });
+  }
+
   // 2. SYNTHETIC / DUMMY UTR DETECTION
   if (upiResult.isDummyUtr) {
     const points = 50;

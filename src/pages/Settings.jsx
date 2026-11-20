@@ -7,7 +7,10 @@ import {
   Trash2, 
   CheckCircle2, 
   AlertTriangle,
-  Info 
+  Info,
+  Store,
+  Save,
+  Check
 } from 'lucide-react';
 import { useScan } from '../context/ScanContext';
 import { Button } from '../components/common/Button';
@@ -15,9 +18,18 @@ import { ConfirmDialog } from '../components/common/ConfirmDialog';
 import { Badge } from '../components/common/Badge';
 
 export const Settings = () => {
-  const { scans, clearScanHistory } = useScan();
+  const { scans, clearScanHistory, merchantUpiId, setMerchantUpiId } = useScan();
   const [isClearModalOpen, setIsClearModalOpen] = useState(false);
   const [clearedNotice, setClearedNotice] = useState(false);
+  const [shopUpiInput, setShopUpiInput] = useState(merchantUpiId || '');
+  const [saveUpiNotice, setSaveUpiNotice] = useState(false);
+
+  const handleSaveUpi = (e) => {
+    e.preventDefault();
+    setMerchantUpiId(shopUpiInput.trim());
+    setSaveUpiNotice(true);
+    setTimeout(() => setSaveUpiNotice(false), 3000);
+  };
 
   const handleClearHistory = () => {
     clearScanHistory();
@@ -45,6 +57,72 @@ export const Settings = () => {
           <span>Local scan history and cached records have been successfully deleted.</span>
         </div>
       )}
+
+      {/* Section 0: Merchant Profile & Expected UPI ID */}
+      <div className="settings-card" style={{ borderLeft: '4px solid var(--color-primary-accent)' }}>
+        <div className="settings-card-header">
+          <h2>
+            <Store size={20} color="var(--color-primary-accent)" />
+            Merchant Profile & Shop UPI ID
+          </h2>
+          <p>Configure your business UPI VPA for automated cross-checking against scanned payment screenshots</p>
+        </div>
+
+        <form onSubmit={handleSaveUpi} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '6px' }}>
+              Your Registered Shop / Counter UPI ID
+            </label>
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              <input
+                type="text"
+                placeholder="e.g. yourshop@okhdfcbank or merchant@paytm"
+                value={shopUpiInput}
+                onChange={(e) => setShopUpiInput(e.target.value)}
+                style={{
+                  flex: 1,
+                  minWidth: '240px',
+                  padding: '9px 12px',
+                  borderRadius: '6px',
+                  border: '1px solid var(--color-border)',
+                  fontSize: '14px',
+                  fontFamily: 'monospace',
+                  background: '#FFFFFF'
+                }}
+              />
+              <Button
+                type="submit"
+                variant="primary"
+                size="md"
+                icon={saveUpiNotice ? Check : Save}
+              >
+                {saveUpiNotice ? 'Saved!' : 'Save Shop UPI'}
+              </Button>
+            </div>
+          </div>
+
+          <div className="text-secondary" style={{ fontSize: '12px', lineHeight: 1.5 }}>
+            💡 <strong>Why configure this?</strong> Scammers frequently show real or edited screenshots of payments made to someone else or a mule account. When you set your UPI ID here, every scan automatically runs an extra cross-check: if the beneficiary in the screenshot doesn't match your shop ID, a severe suspicion alert (+65 risk score) is triggered instantly.
+          </div>
+
+          {merchantUpiId && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '8px 12px',
+              background: '#F0F9FF',
+              border: '1px solid #BAE6FD',
+              borderRadius: '6px',
+              fontSize: '12px',
+              color: '#0369A1'
+            }}>
+              <CheckCircle2 size={14} color="#0284C7" />
+              <span>Active verification target: <strong>{merchantUpiId}</strong></span>
+            </div>
+          )}
+        </form>
+      </div>
 
       {/* Section A: Privacy */}
       <div className="settings-card">

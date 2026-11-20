@@ -8,6 +8,7 @@ const ScanContext = createContext(null);
 
 const STORAGE_KEY = 'upi_shield_scan_history';
 const ANALYSES_STORAGE_KEY = 'upi_shield_analyses_cache';
+const MERCHANT_UPI_KEY = 'upi_shield_merchant_upi';
 
 export const ScanProvider = ({ children, initialScan = null, initialScans = null }) => {
   // Currently uploaded screenshot (held in memory for privacy)
@@ -17,6 +18,34 @@ export const ScanProvider = ({ children, initialScan = null, initialScans = null
   const [currentAnalysis, setCurrentAnalysis] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisProgress, setAnalysisProgress] = useState({ status: '', progress: 0 });
+
+  // Optional Merchant's Registered UPI ID (persisted in LocalStorage)
+  const [merchantUpiId, setMerchantUpiIdState] = useState(() => {
+    try {
+      if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+        return localStorage.getItem(MERCHANT_UPI_KEY) || '';
+      }
+      return '';
+    } catch {
+      return '';
+    }
+  });
+
+  const setMerchantUpiId = (id) => {
+    const clean = (id || '').trim().toLowerCase();
+    setMerchantUpiIdState(clean);
+    try {
+      if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+        if (clean) {
+          localStorage.setItem(MERCHANT_UPI_KEY, clean);
+        } else {
+          localStorage.removeItem(MERCHANT_UPI_KEY);
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to save merchant UPI ID to LocalStorage:', e);
+    }
+  };
 
   // Historical scans list (persisted in LocalStorage)
   const [scans, setScans] = useState(() => {
@@ -132,11 +161,13 @@ export const ScanProvider = ({ children, initialScan = null, initialScans = null
   /**
    * Executes the full 5-Layer Forensic Analysis Pipeline
    */
-  const executeForensicPipeline = async (scanData, scanRecordId) => {
+  const executeForensicPipeline = async (scanData, scanRecordId, expectedUpi = null) => {
     if (!scanData) return null;
 
     setIsAnalyzing(true);
     setAnalysisProgress({ status: 'Starting multi-layer examination...', progress: 5 });
+
+    const targetExpectedUpi = expectedUpi || merchantUpiId || null;
 
     try {
       // 1. Layer 2: Metadata Examination
@@ -147,11 +178,12 @@ export const ScanProvider = ({ children, initialScan = null, initialScans = null
       setAnalysisProgress({ status: 'Layer 3: Computing Error Level Analysis (ELA)...', progress: 40 });
       const integrityResult = await analyzeImageIntegrity(scanData.previewUrl || scanData.file);
 
-      // 3. Layer 1: OCR Intelligence
-      setAnalysisProgress({ status: 'Layer 1: Processing OCR Intelligence...', progress: 60 });
+      // 3. Layer 1: OCR Intelligence & Beneficiary UPI ID Matching
+      setAnalysisProgress({ status: 'Layer 1: Processing OCR & Beneficiary checks...', progress: 60 });
       const ocrResult = await runOCRIntelligence(
         scanData.previewUrl || scanData.file,
-        (progressUpdate) => setAnalysisProgress(progressUpdate)
+        (progressUpdate) => setAnalysisProgress(progressUpdate),
+        targetExpectedUpi
       );
 
       // 4. Layer 4: Transaction Consistency
@@ -169,6 +201,7 @@ export const ScanProvider = ({ children, initialScan = null, initialScans = null
 
       const fullAnalysis = {
         scanId: scanRecordId,
+        expectedMerchantUpi: targetExpectedUpi,
         completedAt: new Date().toISOString(),
         ocrResult,
         metadataResult,
@@ -179,13 +212,13 @@ export const ScanProvider = ({ children, initialScan = null, initialScans = null
 
       setCurrentAnalysis(fullAnalysis);
 
-      // Cache lightweight analysis results (without heavy raw image strings)
+      // Cache lightweight analysis results
       if (scanRecordId) {
         const lightweightToCache = {
           ...fullAnalysis,
           integrityResult: {
             ...fullAnalysis.integrityResult,
-            elaImageUrl: null // omit data URI from permanent localStorage
+            elaImageUrl: null
           }
         };
         setAnalysesCache(prev => ({ ...prev, [scanRecordId]: lightweightToCache }));
@@ -195,7 +228,8 @@ export const ScanProvider = ({ children, initialScan = null, initialScans = null
           amount: upiResult.amount || null,
           riskLevel: riskAssessment.riskLevel,
           status: 'Completed',
-          suspicionScore: riskAssessment.score
+          suspicionScore: riskAssessment.score,
+          expectedMerchantUpi: targetExpectedUpi
         });
       }
 
@@ -224,6 +258,8 @@ export const ScanProvider = ({ children, initialScan = null, initialScans = null
     clearCurrentScan,
     currentAnalysis,
     setCurrentAnalysis,
+    merchantUpiId,
+    setMerchantUpiId,
     isAnalyzing,
     analysisProgress,
     executeForensicPipeline,
