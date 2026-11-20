@@ -1,0 +1,60 @@
+/* UPI Shield Design System — Locked Variables */
+:root {
+  /* Exact Color Palette */
+  --color-deep-navy: #102A43;
+  --color-secondary-navy: #183B56;
+  --color-main-bg: #F5F7FA;
+  --color-card-bg: #FFFFFF;
+  --color-primary-accent: #147D64;
+  --color-primary-accent-hover: #0f624e;
+  --color-primary-text: #172B3A;
+  --color-secondary-text: #627D98;
+  --color-border: #D9E2EC;
+  --color-border-subtle: #E2E8F0;
+
+  /* Risk Semantics */
+  --color-risk-high: #C0393B;
+  --color-risk-high-bg: #FDF2F2;
+  --color-risk-high-border: #F8B4B4;
+
+  --color-risk-medium: #D69E2E;
+  --color-risk-medium-bg: #FEFBF2;
+  --color-risk-medium-border: #F6E05E;
+
+  --color-risk-low: #27835B;
+  --color-risk-low-bg: #F0FDF4;
+  --color-risk-low-border: #9AE6B4;
+
+  /* Neutrals & Utilities */
+  --color-white: #FFFFFF;
+  --color-sidebar-text: #9FB3C8;
+  --color-sidebar-active-bg: rgba(20, 125, 100, 0.16);
+  --color-sidebar-active-text: #FFFFFF;
+  --color-sidebar-border: #243B53;
+  --color-input-bg: #FFFFFF;
+  --color-table-header-bg: #F8FAFC;
+  --color-table-hover-bg: #F1F5F8;
+
+  /* Typography */
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-size-main-heading: 26px;
+  --font-size-section-heading: 18px;
+  --font-size-body: 14px;
+  --font-size-metadata: 12px;
+  --font-size-button: 14px;
+
+  /* Radii */
+  --radius-card: 8px;
+  --radius-button: 6px;
+  --radius-badge: 4px;
+  --radius-input: 6px;
+
+  /* Shadows (minimal per design system) */
+  --shadow-sm: 0 1px 2px 0 rgba(16, 42, 67, 0.05);
+  --shadow-card: 0 1px 3px 0 rgba(16, 42, 67, 0.04);
+  --shadow-modal: 0 10px 25px -5px rgba(16, 42, 67, 0.2), 0 8px 10px -6px rgba(16, 42, 67, 0.1);
+
+  /* Layout */
+  --sidebar-width: 260px;
+  --header-height: 70px;
+}

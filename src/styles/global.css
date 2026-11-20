@@ -1,0 +1,176 @@
+@import './variables.css';
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  font-family: var(--font-family);
+  font-size: var(--font-size-body);
+  line-height: 1.5;
+  color: var(--color-primary-text);
+  background-color: var(--color-main-bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Typography Hierarchy */
+h1, .h1 {
+  font-size: var(--font-size-main-heading);
+  font-weight: 600;
+  color: var(--color-primary-text);
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+
+h2, .h2 {
+  font-size: var(--font-size-section-heading);
+  font-weight: 600;
+  color: var(--color-primary-text);
+  letter-spacing: -0.01em;
+  line-height: 1.35;
+}
+
+h3, .h3 {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-primary-text);
+  line-height: 1.4;
+}
+
+p {
+  color: var(--color-primary-text);
+  font-size: var(--font-size-body);
+}
+
+.text-secondary {
+  color: var(--color-secondary-text);
+}
+
+.text-metadata {
+  font-size: var(--font-size-metadata);
+  color: var(--color-secondary-text);
+}
+
+.text-semibold {
+  font-weight: 600;
+}
+
+.text-medium {
+  font-weight: 500;
+}
+
+/* Institutional Fintech Card container */
+.fintech-card {
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  padding: 20px;
+}
+
+/* Security Notice Banner */
+.security-notice-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 18px;
+  background-color: #F0F4F8;
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--color-primary-accent);
+  border-radius: var(--radius-button);
+  color: var(--color-primary-text);
+  font-size: var(--font-size-body);
+  margin-top: 24px;
+}
+
+.security-notice-banner svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--color-primary-accent);
+}
+
+/* Tables */
+.fintech-table-container {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-card-bg);
+}
+
+.fintech-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: var(--font-size-body);
+}
+
+.fintech-table th {
+  background-color: var(--color-table-header-bg);
+  color: var(--color-secondary-text);
+  font-size: var(--font-size-metadata);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.fintech-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-primary-text);
+  vertical-align: middle;
+}
+
+.fintech-table tr:last-child td {
+  border-bottom: none;
+}
+
+.fintech-table tr:hover td {
+  background-color: var(--color-table-hover-bg);
+}
+
+/* Links */
+a {
+  color: var(--color-primary-accent);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+a:hover {
+  color: var(--color-primary-accent-hover);
+}
+
+/* Utility buttons/actions */
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #F1F5F8;
+}
+::-webkit-scrollbar-thumb {
+  background: #CBD2D9;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #9AA5B1;
+}
